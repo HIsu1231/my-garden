@@ -1,0 +1,830 @@
+:root {
+  --bg: #F4F7F0;
+  --card: #FFFFFF;
+  --primary: #4A8C5C;
+  --primary-light: #7DBF8E;
+  --primary-dark: #2D6042;
+  --accent: #F4A261;
+  --text: #2C3B2D;
+  --text-muted: #7A9080;
+  --border: #DDE8D8;
+  --shadow: rgba(74, 140, 92, 0.12);
+  --radius: 20px;
+  --radius-sm: 12px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Noto Sans KR', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+}
+
+.hidden { display: none !important; }
+
+/* ════════════════════════════════
+   HOME VIEW
+════════════════════════════════ */
+
+.home-header {
+  background: var(--card);
+  border-bottom: 1px solid var(--border);
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 2px 12px var(--shadow);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.home-header-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.app-logo { font-size: 1.4rem; }
+.app-title { font-size: 1.1rem; font-weight: 700; color: var(--primary-dark); }
+
+.home-main {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 24px 16px 48px;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.section-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 12px;
+}
+
+/* 이번 달 카드 */
+.home-current-card {
+  background: var(--card);
+  border-radius: var(--radius);
+  padding: 24px;
+  box-shadow: 0 4px 24px var(--shadow);
+  border: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.home-current-top {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.home-plant-big-emoji {
+  font-size: 3.2rem;
+  line-height: 1;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+}
+
+.home-plant-meta {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.home-plant-name {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.home-plant-month {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+}
+
+.home-stage-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #E8F5E9;
+  border: 1px solid #A5D6A7;
+  color: var(--primary-dark);
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 20px;
+  width: fit-content;
+  margin-top: 4px;
+}
+
+.home-progress-bar-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.home-progress-bar {
+  height: 8px;
+  background: var(--bg);
+  border-radius: 99px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+
+.home-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--primary-light), var(--primary));
+  border-radius: 99px;
+  transition: width 0.6s ease;
+}
+
+.home-progress-text {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  text-align: right;
+}
+
+.go-garden-btn {
+  width: 100%;
+  padding: 14px;
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  color: white;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 1rem;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 4px 12px rgba(74, 140, 92, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.go-garden-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(74, 140, 92, 0.4);
+}
+
+.done-today-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: #E8F5E9;
+  border-radius: var(--radius-sm);
+  padding: 12px;
+  font-size: 0.9rem;
+  color: var(--primary-dark);
+  font-weight: 600;
+}
+
+/* 식물 없을 때 */
+.no-plant-card {
+  background: var(--card);
+  border-radius: var(--radius);
+  padding: 32px 24px;
+  box-shadow: 0 4px 24px var(--shadow);
+  border: 2px dashed var(--border);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.no-plant-emoji { font-size: 2.5rem; }
+
+.no-plant-card p {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  line-height: 1.6;
+}
+
+.start-btn {
+  padding: 12px 28px;
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  color: white;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 0.95rem;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.start-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 16px rgba(74,140,92,0.3); }
+
+/* 컬렉션 그리드 */
+.collection-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.collection-card {
+  background: var(--card);
+  border-radius: var(--radius-sm);
+  padding: 18px 14px;
+  box-shadow: 0 2px 12px var(--shadow);
+  border: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  text-align: center;
+}
+
+.coll-emoji { font-size: 2.6rem; }
+
+.coll-name {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.coll-month {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+.coll-stage {
+  font-size: 0.78rem;
+  background: #F3F8F0;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 3px 10px;
+  color: var(--primary-dark);
+  font-weight: 500;
+}
+
+.coll-count {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.collection-empty {
+  text-align: center;
+  padding: 32px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.collection-empty span { font-size: 2rem; }
+.collection-empty p { font-size: 0.85rem; color: var(--text-muted); line-height: 1.6; }
+
+/* ── 복지 배너 ── */
+.welfare-section { display: flex; flex-direction: column; gap: 10px; }
+
+.welfare-banner {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 16px 18px;
+  text-decoration: none;
+  color: inherit;
+  box-shadow: 0 2px 12px var(--shadow);
+  transition: all 0.2s;
+}
+
+.welfare-banner:hover {
+  border-color: var(--primary-light);
+  box-shadow: 0 4px 20px rgba(74, 140, 92, 0.18);
+  transform: translateY(-2px);
+}
+
+.welfare-banner-icon {
+  font-size: 1.8rem;
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  background: #F0F8F2;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.welfare-banner-body { flex: 1; display: flex; flex-direction: column; gap: 3px; }
+
+.welfare-banner-title {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.welfare-banner-desc {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.welfare-banner-arrow {
+  font-size: 1rem;
+  color: var(--primary-light);
+  flex-shrink: 0;
+  transition: transform 0.2s;
+}
+
+.welfare-banner:hover .welfare-banner-arrow { transform: translateX(4px); }
+
+/* ════════════════════════════════
+   GARDEN VIEW
+════════════════════════════════ */
+
+.garden-header {
+  background: var(--card);
+  border-bottom: 1px solid var(--border);
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  box-shadow: 0 2px 12px var(--shadow);
+}
+
+.back-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 6px 14px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.2s;
+}
+
+.back-btn:hover {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+}
+
+.back-arrow { font-size: 1rem; }
+
+.garden-header-center { flex: 1; display: flex; justify-content: center; }
+
+.month-badge {
+  background: var(--primary-light);
+  color: white;
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 4px 12px;
+  border-radius: 20px;
+}
+
+.streak-badge {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  background: #FFF3E0;
+  border: 1px solid #FFD180;
+  border-radius: 20px;
+  padding: 4px 12px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #E65100;
+}
+
+.fire { font-size: 1rem; }
+
+.garden-main {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 20px 16px 48px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* ── 식물 섹션 ── */
+.plant-section {
+  background: var(--card);
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: 0 4px 24px var(--shadow);
+  border: 1px solid var(--border);
+}
+
+.plant-display {
+  position: relative;
+  height: 260px;
+  overflow: hidden;
+}
+
+.sky {
+  position: absolute;
+  inset: 0;
+  transition: background 1s;
+}
+
+.ground {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 60px;
+}
+
+.soil {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 60px;
+  background: linear-gradient(to bottom, #8B6542 0%, #6B4C2A 100%);
+  border-radius: 40% 40% 0 0 / 20px 20px 0 0;
+}
+
+.plant-art {
+  position: absolute;
+  bottom: 44px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transition: all 0.6s ease;
+}
+
+.plant-info {
+  padding: 14px 20px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.plant-name-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.plant-emoji-badge { font-size: 1.4rem; }
+
+.plant-name {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--primary-dark);
+  flex: 1;
+}
+
+.change-plant-btn {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 4px 12px;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.2s;
+}
+.change-plant-btn:hover { background: var(--primary); color: white; border-color: var(--primary); }
+
+.stage-progress {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.stage-dots { display: flex; gap: 5px; align-items: center; }
+
+.stage-dot {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  background: var(--border);
+  transition: all 0.4s;
+}
+.stage-dot.active { background: var(--primary); transform: scale(1.2); }
+.stage-dot.done { background: var(--primary-light); }
+
+.stage-label {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  font-weight: 500;
+  background: var(--bg);
+  padding: 2px 10px;
+  border-radius: 20px;
+}
+
+.completion-count { font-size: 0.82rem; color: var(--text-muted); }
+.completion-count strong { color: var(--primary); font-size: 0.95rem; }
+.goal-text { opacity: 0.6; }
+
+/* ── 미션 섹션 ── */
+.mission-card {
+  background: var(--card);
+  border-radius: var(--radius);
+  padding: 22px;
+  box-shadow: 0 4px 24px var(--shadow);
+  border: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+}
+
+.mission-label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.mission-icon { font-size: 0.95rem; }
+.mission-date { margin-left: auto; font-weight: 400; text-transform: none; letter-spacing: 0; }
+
+.mission-text {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.4;
+}
+
+.mission-desc {
+  font-size: 0.86rem;
+  color: var(--text-muted);
+  line-height: 1.6;
+  padding: 10px 14px;
+  background: var(--bg);
+  border-radius: var(--radius-sm);
+  border-left: 3px solid var(--primary-light);
+}
+
+.complete-btn {
+  width: 100%;
+  padding: 14px;
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  color: white;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 1rem;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 4px 12px rgba(74, 140, 92, 0.3);
+}
+
+.complete-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(74, 140, 92, 0.4); }
+
+.already-done {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 14px;
+  background: linear-gradient(135deg, #E8F5E9, #F1F8E9);
+  border-radius: var(--radius-sm);
+  font-size: 0.9rem;
+  color: var(--primary-dark);
+  font-weight: 500;
+  text-align: center;
+}
+
+.next-mission-text { font-size: 0.77rem; color: var(--text-muted); font-weight: 400; }
+
+/* ── 달력 ── */
+.calendar-section {
+  background: var(--card);
+  border-radius: var(--radius);
+  padding: 18px;
+  box-shadow: 0 4px 24px var(--shadow);
+  border: 1px solid var(--border);
+}
+
+.calendar-section h3 {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.calendar {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 5px;
+}
+
+.cal-header {
+  font-size: 0.67rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-align: center;
+  padding: 3px 0;
+}
+
+.cal-day {
+  aspect-ratio: 1;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  background: var(--bg);
+  transition: all 0.2s;
+}
+
+.cal-day.empty { background: transparent; }
+.cal-day.done { background: linear-gradient(135deg, var(--primary), var(--primary-light)); color: white; font-weight: 700; box-shadow: 0 2px 6px rgba(74,140,92,0.3); }
+.cal-day.today { border: 2px solid var(--primary); color: var(--primary-dark); font-weight: 700; }
+.cal-day.today.done { border-color: transparent; }
+.cal-day.future { opacity: 0.35; }
+
+/* ── 팁 ── */
+.tips-section {
+  background: var(--card);
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: 0 4px 24px var(--shadow);
+  border: 1px solid var(--border);
+}
+
+.tips-section summary {
+  padding: 15px 18px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  user-select: none;
+  list-style: none;
+}
+
+.tips-section summary::-webkit-details-marker { display: none; }
+
+.tips-list {
+  padding: 0 18px 14px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.tip-chip {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 4px 11px;
+  font-size: 0.75rem;
+  color: var(--text);
+}
+
+/* ════════════════════════════════
+   MODAL
+════════════════════════════════ */
+
+.modal {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  backdrop-filter: blur(4px);
+}
+
+.modal-content {
+  position: relative;
+  background: var(--card);
+  border-radius: var(--radius);
+  padding: 28px 22px;
+  max-width: 440px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+}
+
+.modal-header { text-align: center; margin-bottom: 22px; }
+.modal-header h2 { font-size: 1.15rem; font-weight: 700; margin-bottom: 5px; }
+.modal-sub { font-size: 0.83rem; color: var(--text-muted); }
+
+.plant-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 11px; }
+
+.plant-card {
+  border: 2px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 16px 12px;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.2s;
+  background: var(--bg);
+}
+
+.plant-card:hover { border-color: var(--primary); background: #F0F8F2; transform: translateY(-2px); }
+.plant-card.selected { border-color: var(--primary); background: linear-gradient(135deg, #E8F5E9, #F1F8E9); }
+
+.plant-card-emoji { font-size: 2.2rem; margin-bottom: 7px; }
+.plant-card-name { font-size: 0.92rem; font-weight: 700; color: var(--text); }
+.plant-card-sub { font-size: 0.72rem; color: var(--text-muted); margin-top: 3px; }
+
+.modal-confirm-btn {
+  width: 100%;
+  margin-top: 18px;
+  padding: 13px;
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  color: white;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 0.95rem;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.modal-confirm-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(74,140,92,0.4); }
+
+/* ════════════════════════════════
+   CELEBRATE
+════════════════════════════════ */
+
+#celebrate-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: rgba(0,0,0,0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  backdrop-filter: blur(4px);
+}
+
+.celebrate-content {
+  position: relative;
+  z-index: 201;
+  background: var(--card);
+  border-radius: var(--radius);
+  padding: 36px 28px;
+  text-align: center;
+  max-width: 320px;
+  width: 100%;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+  animation: pop 0.4s ease;
+}
+
+.celebrate-emoji { font-size: 3.5rem; margin-bottom: 12px; animation: bounce 0.6s ease infinite alternate; }
+
+@keyframes bounce { from { transform: translateY(0); } to { transform: translateY(-8px); } }
+
+.celebrate-content h3 { font-size: 1.2rem; font-weight: 700; margin-bottom: 8px; }
+.celebrate-content p { font-size: 0.88rem; color: var(--text-muted); margin-bottom: 20px; line-height: 1.6; }
+.celebrate-content button {
+  padding: 11px 30px;
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  color: white;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 0.92rem;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.confetti-container { position: fixed; inset: 0; pointer-events: none; overflow: hidden; z-index: 200; }
+
+.confetti-piece {
+  position: absolute;
+  top: -20px;
+  width: 10px; height: 10px;
+  border-radius: 2px;
+  animation: fall linear forwards;
+}
+
+@keyframes fall { to { transform: translateY(110vh) rotate(720deg); opacity: 0; } }
+@keyframes pop { from { transform: scale(0.6); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+@keyframes sway { 0%, 100% { transform: rotate(-3deg); } 50% { transform: rotate(3deg); } }

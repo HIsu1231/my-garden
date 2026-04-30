@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>나만의 작은 정원</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- ── 식물 선택 모달 ── -->
+  <div id="plant-modal" class="modal hidden">
+    <div class="modal-backdrop"></div>
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="modal-title">이번 달 키울 식물을 선택하세요</h2>
+        <p class="modal-sub">한 달 동안 매일 미션을 완료하면 씨앗이 자라요 🌱</p>
+      </div>
+      <div class="plant-grid" id="plant-grid"></div>
+    </div>
+  </div>
+
+  <!-- ── 미션 완료 축하 ── -->
+  <div id="celebrate-overlay" class="hidden">
+    <div class="celebrate-content">
+      <div class="celebrate-emoji" id="celebrate-emoji"></div>
+      <h3 id="celebrate-title"></h3>
+      <p id="celebrate-msg"></p>
+      <button onclick="closeCelebrate()">확인</button>
+    </div>
+    <div class="confetti-container" id="confetti-container"></div>
+  </div>
+
+  <!-- ════════════════════════════════
+       HOME VIEW — 컬렉션
+  ════════════════════════════════ -->
+  <div id="home-view" class="hidden">
+    <header class="home-header">
+      <div class="home-header-title">
+        <span class="app-logo">🌿</span>
+        <span class="app-title">나만의 작은 정원</span>
+      </div>
+    </header>
+
+    <main class="home-main">
+
+      <!-- 이번 달 식물 -->
+      <section class="this-month-section">
+        <div class="section-label">이번 달</div>
+        <div id="home-current-card">
+          <!-- JS로 렌더 -->
+        </div>
+      </section>
+
+      <!-- 컬렉션 -->
+      <section class="collection-section">
+        <div class="section-label">나의 식물 컬렉션</div>
+        <div id="collection-grid" class="collection-grid">
+          <!-- JS로 렌더 -->
+        </div>
+        <div id="collection-empty" class="collection-empty hidden">
+          <span>🪴</span>
+          <p>아직 완료한 달이 없어요.<br>매달 미션을 마치면 여기에 모여요!</p>
+        </div>
+      </section>
+
+      <!-- 복지 배너 -->
+      <section class="welfare-section">
+        <div class="section-label">도움받기</div>
+        <a class="welfare-banner" href="https://jaripon.ncrc.or.kr" target="_blank" rel="noopener">
+          <div class="welfare-banner-icon">🌱</div>
+          <div class="welfare-banner-body">
+            <div class="welfare-banner-title">자립정보ON</div>
+            <div class="welfare-banner-desc">전국 자립 지원 사업 정보 한눈에<br>아동권리보장원 운영</div>
+          </div>
+          <div class="welfare-banner-arrow">→</div>
+        </a>
+        <a class="welfare-banner" href="https://www.bokjiro.go.kr" target="_blank" rel="noopener">
+          <div class="welfare-banner-icon">🤝</div>
+          <div class="welfare-banner-body">
+            <div class="welfare-banner-title">복지로</div>
+            <div class="welfare-banner-desc">마음건강·주거·일자리 등 맞춤형 복지<br>대한민국 대표 복지 포털</div>
+          </div>
+          <div class="welfare-banner-arrow">→</div>
+        </a>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- ════════════════════════════════
+       GARDEN VIEW — 미션
+  ════════════════════════════════ -->
+  <div id="garden-view" class="hidden">
+    <header class="garden-header">
+      <button class="back-btn" onclick="goHome()">
+        <span class="back-arrow">←</span> 홈
+      </button>
+      <div class="garden-header-center">
+        <span class="month-badge" id="month-badge"></span>
+      </div>
+      <div class="streak-badge">
+        <span class="fire">🔥</span>
+        <span id="streak-count">0</span>일
+      </div>
+    </header>
+
+    <main class="garden-main">
+
+      <!-- 식물 디스플레이 -->
+      <section class="plant-section">
+        <div class="plant-display">
+          <div class="sky" id="plant-sky"></div>
+          <div class="plant-art" id="plant-art"></div>
+          <div class="ground"><div class="soil"></div></div>
+        </div>
+        <div class="plant-info">
+          <div class="plant-name-row">
+            <span class="plant-emoji-badge" id="plant-emoji-badge"></span>
+            <span class="plant-name" id="plant-name-display"></span>
+            <button class="change-plant-btn" onclick="showPlantModal()">변경</button>
+          </div>
+          <div class="stage-progress">
+            <div class="stage-dots" id="stage-dots"></div>
+            <div class="stage-label" id="stage-label"></div>
+          </div>
+          <div class="completion-count">
+            이번 달 <strong id="completion-count">0</strong>일 완료
+            <span class="goal-text">/ 31일</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- 오늘의 미션 -->
+      <section class="mission-section">
+        <div class="mission-card" id="mission-card">
+          <div class="mission-label">
+            <span class="mission-icon">✨</span> 오늘의 미션
+            <span class="mission-date" id="mission-date"></span>
+          </div>
+          <div class="mission-text" id="mission-text"></div>
+          <div class="mission-desc" id="mission-desc"></div>
+          <button class="complete-btn" id="complete-btn" onclick="completeMission()">
+            ✅ 미션 완료!
+          </button>
+          <div class="already-done hidden" id="already-done">
+            <span>🌟 오늘 미션을 완료했어요!</span>
+            <span class="next-mission-text">내일 또 만나요</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- 달력 -->
+      <section class="calendar-section">
+        <h3>이번 달 기록</h3>
+        <div class="calendar" id="calendar"></div>
+      </section>
+
+      <!-- 미션 목록 힌트 -->
+      <section class="tips-section">
+        <details>
+          <summary>💡 어떤 미션들이 있나요?</summary>
+          <div class="tips-list" id="tips-list"></div>
+        </details>
+      </section>
+
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
