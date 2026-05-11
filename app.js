@@ -1,5 +1,463 @@
 'use strict';
 
+// ══════════════════════════════════════════════════════════
+// Supabase 초기화
+// supabase.com 에서 프로젝트 생성 후 아래 두 값을 교체하세요.
+// ══════════════════════════════════════════════════════════
+const SUPABASE_URL      = 'https://pmuuorqlwjbclxpgffmc.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBtdXVvcnFsd2piY2x4cGdmZm1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0OTQ2OTcsImV4cCI6MjA5NDA3MDY5N30.TXCvfvo6sVkZAzb8SOPYKYCkiZ2TpcOyFPUwVqH-ct4';
+const { createClient } = supabase;
+const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// ── 격려 메시지 ──
+const ENCOURAGE_MESSAGES = [
+  { emoji: '🌧️', title: '비가 내린 날이에요',     msg: '비가 오는 날엔 식물도 쉬어가요. 내일 다시 시작해봐요.' },
+  { emoji: '☁️', title: '흐린 날도 있어요',       msg: '맑은 날만 있을 수는 없어요. 흐린 날도 지나가요.' },
+  { emoji: '🌙', title: '오늘은 쉬어가요',         msg: '매일 완벽할 필요는 없어요. 있었다는 것만으로도 충분해요.' },
+  { emoji: '🤗', title: '당신은 잘하고 있어요',    msg: '작은 것들이 쌓여서 큰 변화가 돼요. 포기하지 않은 것만으로도 대단해요.' },
+  { emoji: '🌸', title: '천천히 가도 괜찮아요',    msg: '빠르게 가는 것보다 꾸준히 가는 게 더 중요해요.' },
+  { emoji: '✨', title: '내일이 또 있어요',         msg: '오늘 못 했어도 내일이 기다리고 있어요. 기운 내요!' },
+  { emoji: '🍃', title: '식물도 이해해요',          msg: '우리 식물은 당신의 노력을 알고 있어요. 다음에 만나요.' },
+  { emoji: '💪', title: '다시 시작하면 돼요',       msg: '중요한 건 넘어졌을 때 다시 일어나는 거예요. 할 수 있어요!' },
+  { emoji: '🌿', title: '잠시 쉬어가는 중',        msg: '충분한 휴식이 더 잘 자라게 해요. 오늘은 쉬어도 돼요.' },
+  { emoji: '💙', title: '그래도 괜찮아요',          msg: '완벽하지 않아도 괜찮아요. 당신의 속도로 가면 돼요.' },
+  { emoji: '🌱', title: '씨앗은 기다려요',          msg: '씨앗은 땅 속에서도 조금씩 자라고 있어요. 당신도 그렇게요.' },
+  { emoji: '🫶', title: '스스로를 다독여요',        msg: '오늘 하루 버텨낸 것만으로도 충분히 잘한 거예요.' },
+];
+
+// ── 인증 상태 ──
+let currentUser = null;   // supabase User 객체
+let userProfile = null;   // profiles 테이블 row
+
+// ── 인증샷 캐시 (날짜 → proof row) ──
+let proofCache = {};
+
+// ── 버튼 로딩 상태 ──
+function setAuthLoading(btnId, loading) {
+  const btn = document.getElementById(btnId);
+  if (!btn) return;
+  btn.disabled = loading;
+  btn.textContent = loading
+    ? (btnId === 'login-btn' ? '로그인 중...' : '가입 중...')
+    : (btnId === 'login-btn' ? '로그인' : '회원가입');
+}
+
+// ── 인증 패널 전환 ──
+function showAuthPanel(panel) {
+  const isLogin = panel === 'login';
+  document.getElementById('login-panel').classList.toggle('hidden', !isLogin);
+  document.getElementById('signup-panel').classList.toggle('hidden', isLogin);
+  document.getElementById('tab-login').classList.toggle('active', isLogin);
+  document.getElementById('tab-signup').classList.toggle('active', !isLogin);
+  clearAuthErrors();
+}
+
+function clearAuthErrors() {
+  ['login-error', 'signup-error', 'err-username', 'err-password', 'err-password-confirm',
+   'err-name', 'err-birthdate', 'err-privacy'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) { el.textContent = ''; el.classList.add('hidden'); }
+  });
+}
+
+function showFieldError(id, msg) {
+  const el = document.getElementById(id);
+  if (el) { el.textContent = msg; el.classList.remove('hidden'); }
+}
+
+// ── 로그인 ──
+async function handleLoginSubmit() {
+  clearAuthErrors();
+  const username = document.getElementById('login-username').value.trim();
+  const password = document.getElementById('login-password').value;
+
+  if (!username || !password) {
+    document.getElementById('login-error').textContent = '아이디와 비밀번호를 입력해주세요.';
+    document.getElementById('login-error').classList.remove('hidden');
+    return;
+  }
+
+  setAuthLoading('login-btn', true);
+
+  // 아이디로 이메일 조회 (RPC)
+  const { data: email, error: rpcError } = await sb.rpc('get_email_by_username', { p_username: username });
+
+  if (rpcError || !email) {
+    setAuthLoading('login-btn', false);
+    document.getElementById('login-error').textContent = '존재하지 않는 아이디입니다.';
+    document.getElementById('login-error').classList.remove('hidden');
+    return;
+  }
+
+  const { data, error } = await sb.auth.signInWithPassword({ email, password });
+  setAuthLoading('login-btn', false);
+
+  if (error) {
+    const m = error.message;
+    const msg = m.includes('Invalid login') || m.includes('invalid_credentials')
+      ? '비밀번호가 올바르지 않습니다.'
+      : m.includes('Email not confirmed')
+      ? '이메일 인증이 필요합니다. Supabase 대시보드에서 이메일 인증을 비활성화해주세요.'
+      : m.includes('rate limit') || m.includes('rate_limit')
+      ? '잠시 후 다시 시도해주세요. (요청 횟수 초과)'
+      : '로그인에 실패했습니다. 다시 시도해주세요.';
+    document.getElementById('login-error').textContent = msg;
+    document.getElementById('login-error').classList.remove('hidden');
+    return;
+  }
+
+  await onAuthSuccess(data.user);
+}
+
+// ── 회원가입 ──
+async function handleSignupSubmit() {
+  clearAuthErrors();
+
+  const username      = document.getElementById('signup-username').value.trim();
+  const password      = document.getElementById('signup-password').value;
+  const pwConfirm     = document.getElementById('signup-password-confirm').value;
+  const name          = document.getElementById('signup-name').value.trim();
+  const birthdate     = document.getElementById('signup-birthdate').value;
+  const privacyAgreed = document.getElementById('signup-privacy').checked;
+  // 이메일은 아이디 기반으로 내부 생성 (사용자 입력 불필요)
+  const email         = `${username}@garden.app`;
+
+  let hasError = false;
+
+  if (!username) {
+    showFieldError('err-username', '아이디를 입력해주세요.'); hasError = true;
+  } else if (!/^[a-zA-Z0-9_]{4,20}$/.test(username)) {
+    showFieldError('err-username', '4~20자, 영문·숫자·밑줄(_)만 사용 가능합니다.'); hasError = true;
+  }
+
+  if (!password) {
+    showFieldError('err-password', '비밀번호를 입력해주세요.'); hasError = true;
+  } else if (password.length < 8) {
+    showFieldError('err-password', '비밀번호는 8자 이상이어야 합니다.'); hasError = true;
+  }
+
+  if (!pwConfirm) {
+    showFieldError('err-password-confirm', '비밀번호를 다시 입력해주세요.'); hasError = true;
+  } else if (password !== pwConfirm) {
+    showFieldError('err-password-confirm', '비밀번호가 일치하지 않습니다.'); hasError = true;
+  }
+
+  if (!name) {
+    showFieldError('err-name', '이름을 입력해주세요.'); hasError = true;
+  }
+
+  if (!birthdate) {
+    showFieldError('err-birthdate', '생년월일을 입력해주세요.'); hasError = true;
+  } else if (new Date(birthdate) > new Date()) {
+    showFieldError('err-birthdate', '올바른 생년월일을 입력해주세요.'); hasError = true;
+  }
+
+  if (!privacyAgreed) {
+    showFieldError('err-privacy', '개인정보 처리방침에 동의해주세요.'); hasError = true;
+  }
+
+  if (hasError) return;
+
+  setAuthLoading('signup-btn', true);
+
+  // 1) 아이디 중복 확인
+  const { data: existing } = await sb
+    .from('profiles')
+    .select('id')
+    .eq('username', username)
+    .maybeSingle();
+
+  if (existing) {
+    setAuthLoading('signup-btn', false);
+    showFieldError('err-username', '이미 사용 중인 아이디입니다.');
+    return;
+  }
+
+  // 2) Supabase Auth 회원가입 (메타데이터에 프로필 정보 포함 → 트리거가 profiles에 자동 저장)
+  const { data: authData, error: authError } = await sb.auth.signUp({
+    email,
+    password,
+    options: {
+      data: { username, name, birthdate },
+    },
+  });
+
+  setAuthLoading('signup-btn', false);
+
+  if (authError) {
+    const m = authError.message;
+    const msg = m.includes('already registered') || m.includes('already been registered')
+      ? '이미 가입된 이메일입니다.'
+      : m.includes('rate limit') || m.includes('rate_limit')
+      ? '잠시 후 다시 시도해주세요. (이메일 요청 횟수 초과)'
+      : m.includes('invalid email')
+      ? '올바른 이메일 형식이 아닙니다.'
+      : m.includes('Password should')
+      ? '비밀번호는 8자 이상이어야 합니다.'
+      : '회원가입에 실패했습니다. 다시 시도해주세요.';
+    document.getElementById('signup-error').textContent = msg;
+    document.getElementById('signup-error').classList.remove('hidden');
+    return;
+  }
+
+  await onAuthSuccess(authData.user);
+}
+
+// ── 로그아웃 ──
+async function logout() {
+  await sb.auth.signOut();
+  currentUser = null;
+  userProfile = null;
+  state = { selectedPlant: null, cycleStart: '', completedDates: [], dailyMissions: {}, plantHistory: [] };
+  showAuthPanel('login');
+  document.getElementById('login-username').value = '';
+  document.getElementById('login-password').value = '';
+  showView('auth-view');
+}
+
+// ── 로그인/회원가입 성공 후 공통 처리 ──
+async function onAuthSuccess(user) {
+  currentUser = user;
+
+  const { data: profile } = await sb
+    .from('profiles')
+    .select('*')
+    .eq('id', user.id)
+    .single();
+  userProfile = profile;
+
+  state = { selectedPlant: null, cycleStart: '', completedDates: [], dailyMissions: {}, plantHistory: [] };
+  await loadState();
+  checkMonthReset();
+  renderHomeView();
+  showView('home-view');
+}
+
+// ── 인증샷 ──
+
+// 이번 달 인증샷 전체 로드 (캘린더 클릭용 캐시)
+async function loadMonthProofs(year, month) {
+  if (!currentUser) return;
+  const my = `${year}-${String(month + 1).padStart(2, '0')}`;
+  const { data } = await sb
+    .from('daily_proofs')
+    .select('*')
+    .eq('user_id', currentUser.id)
+    .like('date_str', `${my}%`);
+  (data || []).forEach(p => { proofCache[p.date_str] = p; });
+}
+
+// 현재 사이클 전체 인증샷 로드 (사이클이 두 달에 걸칠 수 있음)
+async function loadCycleProofs() {
+  if (!currentUser || !state.cycleStart) return;
+  const cycleEnd = getCycleEnd();
+  const { data } = await sb
+    .from('daily_proofs')
+    .select('*')
+    .eq('user_id', currentUser.id)
+    .gte('date_str', state.cycleStart)
+    .lt('date_str', cycleEnd);
+  proofCache = {};
+  (data || []).forEach(p => { proofCache[p.date_str] = p; });
+}
+
+// 사진 업로드 → Storage → public URL 반환
+async function uploadMissionPhoto(file, dateStr) {
+  const ext = file.name.split('.').pop() || 'jpg';
+  const path = `${currentUser.id}/${dateStr}.${ext}`;
+  const { error } = await sb.storage
+    .from('mission-photos')
+    .upload(path, file, { upsert: true, contentType: file.type });
+  if (error) return null;
+  const { data } = sb.storage.from('mission-photos').getPublicUrl(path);
+  return data.publicUrl;
+}
+
+// daily_proofs 저장 (upsert)
+async function saveProof(dateStr, photoUrl, missionText) {
+  await sb.from('daily_proofs').upsert(
+    { user_id: currentUser.id, date_str: dateStr, photo_url: photoUrl, mission_text: missionText },
+    { onConflict: 'user_id,date_str' }
+  );
+  proofCache[dateStr] = { date_str: dateStr, photo_url: photoUrl, mission_text: missionText };
+}
+
+// 인증샷 미리보기
+function previewProofPhoto(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const url = URL.createObjectURL(file);
+  document.getElementById('proof-preview-img').src = url;
+  document.getElementById('proof-preview-wrap').classList.remove('hidden');
+  document.getElementById('proof-upload-area').classList.add('hidden');
+}
+
+// 인증샷 제거
+function removeProofPhoto() {
+  const input = document.getElementById('proof-photo-input');
+  input.value = '';
+  document.getElementById('proof-preview-wrap').classList.add('hidden');
+  document.getElementById('proof-upload-area').classList.remove('hidden');
+}
+
+// 캘린더 날짜 클릭 → 인증샷 확인 모달
+async function openProofModal(dateStr) {
+  let proof = proofCache[dateStr];
+  if (!proof) {
+    const { data } = await sb
+      .from('daily_proofs')
+      .select('*')
+      .eq('user_id', currentUser.id)
+      .eq('date_str', dateStr)
+      .maybeSingle();
+    proof = data;
+    if (proof) proofCache[dateStr] = proof;
+  }
+
+  const [y, m, d] = dateStr.split('-');
+  document.getElementById('proof-modal-date').textContent = `${parseInt(m)}월 ${parseInt(d)}일`;
+
+  // 미션 텍스트: proof 기록 → state 캐시 → 빈 문자열 순으로 폴백
+  const missionText = proof?.mission_text
+    || state.dailyMissions[dateStr]?.text
+    || '';
+  const missionEl = document.getElementById('proof-modal-mission');
+  if (missionText) {
+    missionEl.textContent = missionText;
+    missionEl.classList.remove('hidden');
+  } else {
+    missionEl.classList.add('hidden');
+  }
+
+  const photoWrap = document.getElementById('proof-modal-photo-wrap');
+  const noPhoto   = document.getElementById('proof-modal-no-photo');
+
+  if (proof?.photo_url) {
+    document.getElementById('proof-modal-photo').src = proof.photo_url;
+    photoWrap.classList.remove('hidden');
+    noPhoto.classList.add('hidden');
+  } else {
+    photoWrap.classList.add('hidden');
+    noPhoto.classList.remove('hidden');
+  }
+
+  document.getElementById('proof-modal').classList.remove('hidden');
+}
+
+function closeProofModal() {
+  document.getElementById('proof-modal').classList.add('hidden');
+}
+
+// ── 격려 메시지 모달 ──
+let _encourageDateStr = null;
+
+function showEncourageModal(dateStr) {
+  _encourageDateStr = dateStr;
+
+  const item = ENCOURAGE_MESSAGES[Math.floor(Math.random() * ENCOURAGE_MESSAGES.length)];
+  document.getElementById('encourage-emoji').textContent = item.emoji;
+  document.getElementById('encourage-title').textContent = item.title;
+  document.getElementById('encourage-msg').textContent   = item.msg;
+
+  const [y, m, d] = dateStr.split('-');
+  document.getElementById('encourage-date').textContent = `${parseInt(m)}월 ${parseInt(d)}일`;
+
+  const waterBtn = document.getElementById('water-modal-btn');
+  const alreadyDone = state.completedDates.includes(dateStr);
+  if (waterBtn) {
+    waterBtn.disabled = alreadyDone;
+    waterBtn.textContent = alreadyDone ? '💧 이미 물 줬어요' : '💧 물주기';
+  }
+
+  document.getElementById('encourage-modal').classList.remove('hidden');
+}
+
+function closeEncourageModal() {
+  document.getElementById('encourage-modal').classList.add('hidden');
+  _encourageDateStr = null;
+}
+
+async function waterPlantOnDate() {
+  const dateStr = _encourageDateStr;
+  if (!dateStr || state.completedDates.includes(dateStr)) return;
+
+  const btn = document.getElementById('water-modal-btn');
+  if (btn) { btn.disabled = true; btn.textContent = '물 주는 중...'; }
+
+  const prevStage = getPlantStage();
+  state.completedDates.push(dateStr);
+  await saveState();
+  const newStage = getPlantStage();
+
+  closeEncourageModal();
+  await renderGardenView();
+  renderCurrentPlantCard();
+
+  const grew = newStage > prevStage;
+  document.getElementById('celebrate-emoji').textContent = '💧';
+  document.getElementById('celebrate-title').textContent = grew ? '식물이 자랐어요!' : '물을 주었어요!';
+  document.getElementById('celebrate-msg').textContent   = grew
+    ? '그날 물을 주었더니 쑥쑥 자랐어요! 🌿'
+    : '그날의 물이 식물에게 닿았어요. 조금씩 자라고 있어요 💚';
+  spawnConfetti();
+  document.getElementById('celebrate-overlay').classList.remove('hidden');
+}
+
+// ── 물주기 ──
+async function waterPlant() {
+  const today = todayStr();
+  if (state.completedDates.includes(today)) return;
+
+  const btn = document.getElementById('water-btn');
+  btn.disabled = true;
+  btn.textContent = '물 주는 중...';
+
+  const prevStage = getPlantStage();
+  state.completedDates.push(today);
+  await saveState();
+  const newStage = getPlantStage();
+
+  btn.disabled  = false;
+  btn.textContent = '💧 오늘은 물만 줄게요';
+
+  await renderGardenView();
+  renderCurrentPlantCard();
+
+  const grew = newStage > prevStage;
+  document.getElementById('celebrate-emoji').textContent = '💧';
+  document.getElementById('celebrate-title').textContent = grew ? '식물이 자랐어요!' : '물을 주었어요!';
+  document.getElementById('celebrate-msg').textContent   = grew
+    ? '물을 먹고 쑥쑥 자랐어요! 내일도 잊지 말아요 🌿'
+    : '오늘도 식물에게 물을 주었어요. 조금씩 자라고 있어요 💚';
+  spawnConfetti();
+  document.getElementById('celebrate-overlay').classList.remove('hidden');
+}
+
+// ── 개인정보 모달 ──
+function showPrivacyModal() {
+  document.getElementById('privacy-modal').classList.remove('hidden');
+}
+
+function closePrivacyModal() {
+  document.getElementById('privacy-modal').classList.add('hidden');
+}
+
+// ── 헤더 유저 정보 렌더 ──
+function renderHeaderUser() {
+  const el = document.getElementById('header-user-area');
+  if (!el || !currentUser) return;
+  const displayName = userProfile?.name
+    || currentUser.user_metadata?.name
+    || currentUser.email
+    || '';
+  el.innerHTML = `
+    <div class="header-user">
+      <span class="header-user-name">🌱 ${displayName}님</span>
+      <button class="header-logout-btn" onclick="logout()">로그아웃</button>
+    </div>
+  `;
+}
+
 // ── 식물 데이터 ──
 const PLANTS = {
   apple: {
@@ -39,8 +497,8 @@ const PLANTS = {
     ]
   },
   lavender: {
-    name: '라벤더', emoji: '💜', sub: '은은한 향기를 퍼뜨려요',
-    leafColor: '#7CB342', flowerEmoji: '💜', fruitEmoji: '💜',
+    name: '라벤더', emoji: '🪻', sub: '은은한 향기를 퍼뜨려요',
+    leafColor: '#7CB342', flowerEmoji: '🪻', fruitEmoji: '🪻',
     stageNames: ['씨앗', '새싹', '성장 중', '꽃망울', '라벤더', '만개'],
     skyColors: [
       ['#E1D5F0','#EDE0F8'], ['#D4C2EA','#E4D5F4'], ['#C7AFE4','#DBCAF0'],
@@ -86,10 +544,10 @@ const MISSIONS = [
 // ── 상태 ──
 let state = {
   selectedPlant: null,
-  monthYear: '',
+  cycleStart: '',     // YYYY-MM-DD: 현재 사이클(식물) 시작일
   completedDates: [],
   dailyMissions: {},
-  plantHistory: [],   // [{ plantId, monthYear, completedCount, stageReached }]
+  plantHistory: [],   // [{ plantId, cycleStart, completedCount, stageReached }]
 };
 
 // ── 유틸 ──
@@ -103,23 +561,80 @@ function currentMonthYear() {
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
 }
 
-function formatMonthYear(my) {
-  const [y, m] = my.split('-');
-  return `${y}년 ${parseInt(m)}월`;
+// 날짜 문자열에 1개월 더한 날짜 반환 (YYYY-MM-DD)
+function addOneMonth(dateStr) {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  let ny = y, nm = m + 1;
+  if (nm > 12) { nm = 1; ny++; }
+  const maxDay = new Date(ny, nm, 0).getDate();
+  const nd = Math.min(d, maxDay);
+  return `${ny}-${String(nm).padStart(2,'0')}-${String(nd).padStart(2,'0')}`;
 }
 
-function loadState() {
-  const raw = localStorage.getItem('garden_state_v2');
-  if (raw) {
-    try { Object.assign(state, JSON.parse(raw)); } catch(e) {}
+// 현재 사이클 종료일 (시작일 + 1개월, exclusive)
+function getCycleEnd() {
+  if (!state.cycleStart) return null;
+  return addOneMonth(state.cycleStart);
+}
+
+// 사이클 내 완료 수
+function getCompletionCountForCycle() {
+  if (!state.cycleStart) return 0;
+  const end = getCycleEnd();
+  return state.completedDates.filter(d => d >= state.cycleStart && d < end).length;
+}
+
+function formatCycleLabel(cycleStart) {
+  // plantHistory 표시용: "2026년 4월 15일 ~"
+  if (!cycleStart) return '';
+  const d = new Date(cycleStart);
+  return `${d.getFullYear()}년 ${d.getMonth()+1}월 ${d.getDate()}일~`;
+}
+
+function formatMonthYear(my) {
+  // 이전 데이터(YYYY-MM) 또는 새 데이터(YYYY-MM-DD) 모두 처리
+  if (!my) return '';
+  if (my.length === 7) {
+    const [y, m] = my.split('-');
+    return `${y}년 ${parseInt(m)}월`;
+  }
+  return formatCycleLabel(my);
+}
+
+async function loadState() {
+  if (!currentUser) return;
+  const { data } = await sb
+    .from('garden_states')
+    .select('*')
+    .eq('user_id', currentUser.id)
+    .maybeSingle();
+  if (data) {
+    state.selectedPlant  = data.selected_plant  ?? null;
+    let rawCycle         = data.month_year       ?? '';
+    // 구형 "YYYY-MM" 형식이면 "YYYY-MM-01"로 보정
+    if (rawCycle.length === 7) rawCycle = rawCycle + '-01';
+    state.cycleStart     = rawCycle;
+    state.completedDates = data.completed_dates  ?? [];
+    state.dailyMissions  = data.daily_missions   ?? {};
+    state.plantHistory   = data.plant_history    ?? [];
   }
 }
 
-function saveState() {
-  localStorage.setItem('garden_state_v2', JSON.stringify(state));
+async function saveState() {
+  if (!currentUser) return;
+  await sb
+    .from('garden_states')
+    .upsert({
+      user_id:         currentUser.id,
+      selected_plant:  state.selectedPlant,
+      month_year:      state.cycleStart,
+      completed_dates: state.completedDates,
+      daily_missions:  state.dailyMissions,
+      plant_history:   state.plantHistory,
+    }, { onConflict: 'user_id' });
 }
 
-function getMissionForDate(dateStr) {
+async function getMissionForDate(dateStr) {
   if (state.dailyMissions[dateStr]) return state.dailyMissions[dateStr];
   const num = parseInt(dateStr.split('-').join(''));
   let idx = num % MISSIONS.length;
@@ -128,7 +643,7 @@ function getMissionForDate(dateStr) {
     idx = (idx + 1) % MISSIONS.length;
   }
   state.dailyMissions[dateStr] = MISSIONS[idx];
-  saveState();
+  await saveState();
   return MISSIONS[idx];
 }
 
@@ -139,6 +654,7 @@ function getPrevDate(dateStr) {
 }
 
 function getCompletionCountForMonth(my) {
+  // 구형 호환용 (컬렉션 표시 등에서 사용)
   return state.completedDates.filter(d => d.startsWith(my)).length;
 }
 
@@ -152,7 +668,7 @@ function stageFromCount(count) {
 }
 
 function getPlantStage() {
-  return stageFromCount(getCompletionCountForMonth(currentMonthYear()));
+  return stageFromCount(getCompletionCountForCycle());
 }
 
 function getStreak() {
@@ -170,7 +686,7 @@ function getStreak() {
 
 // ── 뷰 전환 ──
 function showView(id) {
-  ['home-view', 'garden-view'].forEach(v => {
+  ['auth-view', 'home-view', 'garden-view'].forEach(v => {
     document.getElementById(v).classList.toggle('hidden', v !== id);
   });
 }
@@ -180,26 +696,28 @@ function goHome() {
   showView('home-view');
 }
 
-function goToGarden() {
-  renderGardenView();
+async function goToGarden() {
+  await renderGardenView();
   showView('garden-view');
 }
 
 // ── 홈 뷰 렌더 ──
 function renderHomeView() {
+  renderHeaderUser();
   renderCurrentPlantCard();
   renderCollection();
 }
 
 function renderCurrentPlantCard() {
   const container = document.getElementById('home-current-card');
-  const my = currentMonthYear();
+  const cycleEnd  = getCycleEnd();
+  const isActive  = state.selectedPlant && state.cycleStart && todayStr() < cycleEnd;
 
-  if (!state.selectedPlant || state.monthYear !== my) {
+  if (!isActive) {
     container.innerHTML = `
       <div class="no-plant-card">
         <div class="no-plant-emoji">🪴</div>
-        <p>이번 달 키울 식물을 아직 선택하지 않았어요.<br>씨앗 하나를 골라 시작해봐요!</p>
+        <p>키울 식물을 아직 선택하지 않았어요.<br>씨앗 하나를 골라 시작해봐요!</p>
         <button class="start-btn" onclick="showPlantModal()">식물 선택하기 🌱</button>
       </div>
     `;
@@ -207,7 +725,7 @@ function renderCurrentPlantCard() {
   }
 
   const plant = PLANTS[state.selectedPlant];
-  const count = getCompletionCountForMonth(my);
+  const count = getCompletionCountForCycle();
   const stage = stageFromCount(count);
   const daysInMonth = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate();
   const pct = Math.round((count / daysInMonth) * 100);
@@ -219,7 +737,7 @@ function renderCurrentPlantCard() {
         <div class="home-plant-big-emoji">${plant.emoji}</div>
         <div class="home-plant-meta">
           <div class="home-plant-name">${plant.name}</div>
-          <div class="home-plant-month">${formatMonthYear(my)}</div>
+          <div class="home-plant-month">${formatCycleLabel(state.cycleStart)}</div>
           <div class="home-stage-pill">🌱 ${plant.stageNames[stage]}</div>
         </div>
       </div>
@@ -239,7 +757,7 @@ function renderCurrentPlantCard() {
 }
 
 function renderCollection() {
-  const grid = document.getElementById('collection-grid');
+  const grid  = document.getElementById('collection-grid');
   const empty = document.getElementById('collection-empty');
   const history = state.plantHistory;
 
@@ -252,36 +770,79 @@ function renderCollection() {
   grid.classList.remove('hidden');
   empty.classList.add('hidden');
 
-  // 최신순으로 정렬
-  const sorted = [...history].sort((a, b) => b.monthYear.localeCompare(a.monthYear));
+  // 오래된 순으로 정렬 (화단 왼쪽부터 심어진 순서)
+  const sorted = [...history].sort((a, b) => a.monthYear.localeCompare(b.monthYear));
 
-  grid.innerHTML = sorted.map(h => {
+  // 꽃마다 자연스러운 위치 (left%, fontSize, animDelay)
+  const POSITIONS = [
+    { left:6,  size:2.6, delay:0   }, { left:19, size:3.2, delay:0.6 },
+    { left:32, size:2.4, delay:1.3 }, { left:46, size:3.4, delay:0.2 },
+    { left:59, size:2.8, delay:1.9 }, { left:72, size:2.5, delay:0.9 },
+    { left:84, size:2.2, delay:1.6 }, { left:12, size:2.0, delay:2.1 },
+    { left:38, size:2.1, delay:0.4 }, { left:65, size:2.3, delay:1.2 },
+  ];
+
+  const flowers = sorted.map((h, i) => {
     const plant = PLANTS[h.plantId];
     if (!plant) return '';
+    const pos    = POSITIONS[i % POSITIONS.length];
+    const period = formatCycleLabel(h.monthYear);
     return `
-      <div class="collection-card">
-        <div class="coll-emoji">${plant.emoji}</div>
-        <div class="coll-name">${plant.name}</div>
-        <div class="coll-month">${formatMonthYear(h.monthYear)}</div>
-        <div class="coll-stage">${plant.stageNames[h.stageReached]}</div>
-        <div class="coll-count">${h.completedCount}일 완료</div>
+      <div class="flowerbed-plant" style="left:${pos.left}%;font-size:${pos.size}rem;animation-delay:-${pos.delay}s"
+           onclick="this.classList.toggle('fb-active')">
+        <div class="fb-tooltip">
+          <strong>${plant.name}</strong>
+          <span>${period}</span>
+          <span>${h.completedCount}일 완료</span>
+        </div>
+        <div class="fb-flower">${plant.flowerEmoji}</div>
       </div>
     `;
   }).join('');
+
+  const deco = '';
+
+  grid.innerHTML = `
+    <div class="flowerbed-scene">
+      <div class="fb-sky">
+        <span class="fb-cloud" style="left:7%;top:18%;font-size:2.2rem;animation-delay:0s">☁️</span>
+        <span class="fb-cloud" style="left:48%;top:10%;font-size:1.6rem;animation-delay:-5s">☁️</span>
+        <span class="fb-cloud" style="left:74%;top:22%;font-size:1.9rem;animation-delay:-10s">☁️</span>
+      </div>
+      <div class="fb-hills-far"></div>
+      <div class="fb-hills-near"></div>
+      <div class="fb-grass">
+        ${deco}
+        ${flowers}
+      </div>
+    </div>
+  `;
 }
 
 // ── 가든 뷰 렌더 ──
-function renderGardenView() {
+async function renderGardenView() {
   const plant = PLANTS[state.selectedPlant];
   const stage = getPlantStage();
   const today = todayStr();
-  const mission = getMissionForDate(today);
+  const mission = await getMissionForDate(today);
   const isTodayDone = state.completedDates.includes(today);
+
+  // 사이클 기간의 인증샷 캐시 로드 (시작월 ~ 종료월)
+  await loadCycleProofs();
   const streak = getStreak();
-  const count = getCompletionCountForMonth(currentMonthYear());
+  const count = getCompletionCountForCycle();
 
   const now = new Date();
-  document.getElementById('month-badge').textContent = `${now.getFullYear()}년 ${now.getMonth()+1}월`;
+  // 사이클 기간 배지: "5월 1일 ~ 5월 31일"
+  if (state.cycleStart) {
+    const s = new Date(state.cycleStart);
+    const e = new Date(getCycleEnd());
+    e.setDate(e.getDate() - 1); // inclusive 마지막 날
+    document.getElementById('month-badge').textContent =
+      `${s.getMonth()+1}월 ${s.getDate()}일 ~ ${e.getMonth()+1}월 ${e.getDate()}일`;
+  } else {
+    document.getElementById('month-badge').textContent = `${now.getFullYear()}년 ${now.getMonth()+1}월`;
+  }
   document.getElementById('plant-emoji-badge').textContent = plant.emoji;
   document.getElementById('plant-name-display').textContent = plant.name;
   document.getElementById('completion-count').textContent = count;
@@ -295,16 +856,35 @@ function renderGardenView() {
   document.getElementById('mission-desc').textContent = mission.desc;
 
   const btn = document.getElementById('complete-btn');
+  const waterBtn = document.getElementById('water-btn');
   const doneBanner = document.getElementById('already-done');
+  const uploadArea = document.getElementById('proof-upload-area');
+  const previewWrap = document.getElementById('proof-preview-wrap');
+
   if (isTodayDone) {
     btn.classList.add('hidden');
+    waterBtn?.classList.add('hidden');
+    uploadArea?.classList.add('hidden');
+    previewWrap?.classList.add('hidden');
     doneBanner.classList.remove('hidden');
+    // 오늘 인증샷 표시
+    const todayProof = proofCache[today];
+    const todayProofWrap = document.getElementById('today-proof-wrap');
+    const todayProofImg  = document.getElementById('today-proof-img');
+    if (todayProof?.photo_url && todayProofWrap && todayProofImg) {
+      todayProofImg.src = todayProof.photo_url;
+      todayProofWrap.classList.remove('hidden');
+    } else if (todayProofWrap) {
+      todayProofWrap.classList.add('hidden');
+    }
   } else {
     btn.classList.remove('hidden');
+    waterBtn?.classList.remove('hidden');
+    uploadArea?.classList.remove('hidden');
     doneBanner.classList.add('hidden');
   }
 
-  renderCalendar();
+  await renderCalendar();
 
   document.getElementById('tips-list').innerHTML =
     MISSIONS.map(m => `<span class="tip-chip">${m.text}</span>`).join('');
@@ -417,44 +997,98 @@ function renderStageDots(stage) {
   document.getElementById('stage-label').textContent = plant.stageNames[stage];
 }
 
-function renderCalendar() {
-  const cal = document.getElementById('calendar');
+// 캘린더 표시 중인 연/월 (null이면 현재 월)
+let calViewYear  = null;
+let calViewMonth = null;
+
+async function moveCalMonth(delta) {
   const now = new Date();
-  const year = now.getFullYear();
-  const month = now.getMonth();
-  const today = now.getDate();
+  if (calViewYear === null) { calViewYear = now.getFullYear(); calViewMonth = now.getMonth(); }
+  calViewMonth += delta;
+  if (calViewMonth > 11) { calViewMonth = 0;  calViewYear++; }
+  if (calViewMonth < 0)  { calViewMonth = 11; calViewYear--; }
+  await renderCalendar();
+}
+
+async function renderCalendar() {
+  const cal   = document.getElementById('calendar');
+  const now   = new Date();
+  const year  = calViewYear  ?? now.getFullYear();
+  const month = calViewMonth ?? now.getMonth();
+  const isCurrentMonth = year === now.getFullYear() && month === now.getMonth();
+  const today = isCurrentMonth ? now.getDate() : -1;
+
+  // 해당 월 인증샷 캐시 로드
+  await loadMonthProofs(year, month);
+
+  // 제목 업데이트
+  const titleEl = document.getElementById('cal-title');
+  if (titleEl) titleEl.textContent = isCurrentMonth ? '이번 달 기록' : `${year}년 ${month + 1}월`;
+
+  // 다음 달 버튼: 현재 월 이후는 막기
+  const nextBtn = document.getElementById('cal-next-btn');
+  if (nextBtn) {
+    const isNextFuture = year > now.getFullYear() || (year === now.getFullYear() && month >= now.getMonth());
+    nextBtn.disabled = isNextFuture;
+  }
+
   const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const firstDay = new Date(year, month, 1).getDay();
+  const firstDay    = new Date(year, month, 1).getDay();
+  const monthStr    = `${year}-${String(month + 1).padStart(2, '0')}`;
 
   let html = ['일','월','화','수','목','금','토'].map(d => `<div class="cal-header">${d}</div>`).join('');
   for (let i = 0; i < firstDay; i++) html += `<div class="cal-day empty"></div>`;
 
   for (let d = 1; d <= daysInMonth; d++) {
-    const ds = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-    const isDone = state.completedDates.includes(ds);
-    const isToday = d === today;
-    const isFuture = d > today;
+    const ds = `${monthStr}-${String(d).padStart(2,'0')}`;
+    const isDone    = state.completedDates.includes(ds);
+    const isToday   = d === today;
+    const isFuture  = isCurrentMonth ? d > now.getDate() : false;
+    const isPastMonth = year < now.getFullYear() || (year === now.getFullYear() && month < now.getMonth());
     let cls = 'cal-day';
-    if (isDone) cls += ' done';
-    if (isToday) cls += ' today';
+    if (isDone)   cls += ' done';
+    if (isToday)  cls += ' today';
     if (isFuture) cls += ' future';
-    html += `<div class="${cls}">${d}</div>`;
+    let clickAttr = '';
+    if (isDone) {
+      cls += ' clickable';
+      clickAttr = `onclick="openProofModal('${ds}')" title="${ds} 인증 기록 보기"`;
+    } else if (!isFuture && !isToday && (isPastMonth || isCurrentMonth)) {
+      cls += ' missed-clickable';
+      clickAttr = `onclick="showEncourageModal('${ds}')"`;
+    }
+    html += `<div class="${cls}" ${clickAttr}>${d}</div>`;
   }
   cal.innerHTML = html;
 }
 
 // ── 미션 완료 ──
-function completeMission() {
+async function completeMission() {
   const today = todayStr();
   if (state.completedDates.includes(today)) return;
 
+  const btn = document.getElementById('complete-btn');
+  btn.disabled = true;
+  btn.textContent = '저장 중...';
+
+  const mission = await getMissionForDate(today);
+  const fileInput = document.getElementById('proof-photo-input');
+  const file = fileInput?.files[0] || null;
+
+  // 사진 업로드 (있는 경우)
+  let photoUrl = null;
+  if (file) photoUrl = await uploadMissionPhoto(file, today);
+
+  // 인증 기록 저장
+  await saveProof(today, photoUrl, mission.text);
+
   const prevStage = getPlantStage();
   state.completedDates.push(today);
-  saveState();
+  await saveState();
   const newStage = getPlantStage();
 
-  renderGardenView();
-  // 홈 카드도 갱신 (백그라운드)
+  btn.disabled = false;
+  await renderGardenView();
   renderCurrentPlantCard();
   showCelebrate(prevStage, newStage);
 }
@@ -525,76 +1159,119 @@ function selectPlantCard(id) {
   renderPlantGrid();
 }
 
-function confirmPlantSelection() {
+async function confirmPlantSelection() {
   if (!pendingPlant) return;
 
-  const my = currentMonthYear();
-  const isChanging = state.selectedPlant && state.selectedPlant !== pendingPlant;
-  const isSameMonth = state.monthYear === my;
+  const cycleEnd    = getCycleEnd();
+  const isChanging  = state.selectedPlant && state.selectedPlant !== pendingPlant;
+  const isInCycle   = state.cycleStart && todayStr() < cycleEnd;
 
-  if (isChanging && isSameMonth) {
-    if (!confirm('식물을 바꾸면 이번 달 기록이 초기화돼요. 정말 바꿀까요?')) return;
-    // 이번 달 기록 초기화
-    state.completedDates = state.completedDates.filter(d => !d.startsWith(my));
+  if (isChanging && isInCycle) {
+    if (!confirm('식물을 바꾸면 현재 기록이 초기화돼요. 정말 바꿀까요?')) return;
+    // 사이클 범위 날짜만 삭제
+    state.completedDates = state.completedDates.filter(d => d < state.cycleStart || d >= cycleEnd);
     const kept = {};
     Object.keys(state.dailyMissions).forEach(k => {
-      if (!k.startsWith(my)) kept[k] = state.dailyMissions[k];
+      if (k < state.cycleStart || k >= cycleEnd) kept[k] = state.dailyMissions[k];
     });
     state.dailyMissions = kept;
+    // 인증샷 캐시 & DB & Storage 삭제
+    const cycleProofs = Object.values(proofCache).filter(Boolean);
+    proofCache = {};
+    const storagePaths = cycleProofs
+      .filter(p => p?.photo_url)
+      .map(p => {
+        const marker = '/mission-photos/';
+        const idx = p.photo_url.indexOf(marker);
+        return idx !== -1 ? p.photo_url.slice(idx + marker.length) : null;
+      })
+      .filter(Boolean);
+    if (storagePaths.length > 0) {
+      await sb.storage.from('mission-photos').remove(storagePaths);
+    }
+    await sb.from('daily_proofs')
+      .delete()
+      .eq('user_id', currentUser.id)
+      .gte('date_str', state.cycleStart)
+      .lt('date_str', cycleEnd);
   }
 
   state.selectedPlant = pendingPlant;
-  state.monthYear = my;
-  saveState();
+  state.cycleStart    = todayStr();   // 새 사이클 시작일 = 오늘
+  await saveState();
   document.getElementById('plant-modal').classList.add('hidden');
 
-  // 가든 뷰에서 변경했으면 가든 다시 렌더, 홈에서 변경했으면 홈 렌더
   const gardenVisible = !document.getElementById('garden-view').classList.contains('hidden');
   if (gardenVisible) {
-    renderGardenView();
+    await renderGardenView();
   } else {
     renderHomeView();
   }
 }
 
-// ── 월 전환 처리 ──
-function checkMonthReset() {
-  const my = currentMonthYear();
-  if (state.monthYear && state.monthYear !== my) {
-    // 지난 달 기록을 히스토리에 저장
-    if (state.selectedPlant) {
-      const prevCount = getCompletionCountForMonth(state.monthYear);
-      const prevStage = stageFromCount(prevCount);
-      // 중복 방지
-      const alreadySaved = state.plantHistory.some(h => h.monthYear === state.monthYear);
-      if (!alreadySaved) {
-        state.plantHistory.push({
-          plantId: state.selectedPlant,
-          monthYear: state.monthYear,
-          completedCount: prevCount,
-          stageReached: prevStage,
-        });
-      }
+// ── 사이클 종료 처리 ──
+async function checkMonthReset() {
+  if (!state.cycleStart || !state.selectedPlant) return;
+  const cycleEnd = getCycleEnd();
+  if (todayStr() >= cycleEnd) {
+    const prevCount = getCompletionCountForCycle();
+    const prevStage = stageFromCount(prevCount);
+    const alreadySaved = state.plantHistory.some(h => h.monthYear === state.cycleStart);
+    if (!alreadySaved) {
+      state.plantHistory.push({
+        plantId:       state.selectedPlant,
+        monthYear:     state.cycleStart,   // 기존 필드명 유지 (컬렉션 표시용)
+        completedCount: prevCount,
+        stageReached:  prevStage,
+      });
     }
-    state.monthYear = my;
     state.selectedPlant = null;
-    saveState();
+    state.cycleStart    = '';
+    proofCache = {};
+    await saveState();
   }
 }
 
 // ── 초기화 ──
-function init() {
-  loadState();
-  checkMonthReset();
+async function init() {
+  // Supabase 세션 복원
+  const { data: { session } } = await sb.auth.getSession();
 
-  if (!state.selectedPlant) {
-    // 식물 없으면 홈 보여주고 거기서 선택 유도
-    renderHomeView();
-    showView('home-view');
-  } else {
-    renderHomeView();
-    showView('home-view');
+  if (!session) {
+    showView('auth-view');
+    return;
   }
+
+  currentUser = session.user;
+  const { data: profile } = await sb
+    .from('profiles')
+    .select('*')
+    .eq('id', currentUser.id)
+    .single();
+  userProfile = profile;
+
+  await loadState();
+  await checkMonthReset();
+  renderHomeView();
+  showView('home-view');
 }
 
+// 세션 변경 감지 (다른 탭 로그인/로그아웃 동기화)
+sb.auth.onAuthStateChange((event, session) => {
+  if (event === 'SIGNED_OUT' && currentUser) {
+    currentUser = null;
+    userProfile = null;
+    state = { selectedPlant: null, cycleStart: '', completedDates: [], dailyMissions: {}, plantHistory: [] };
+    showView('auth-view');
+  }
+});
+
 document.addEventListener('DOMContentLoaded', init);
+
+// 화단 꽃 툴팁: 다른 곳 클릭 시 닫기
+document.addEventListener('click', e => {
+  if (!e.target.closest('.flowerbed-plant')) {
+    document.querySelectorAll('.flowerbed-plant.fb-active')
+      .forEach(el => el.classList.remove('fb-active'));
+  }
+});

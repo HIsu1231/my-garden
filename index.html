@@ -7,8 +7,159 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
+
+  <!-- ── 격려 메시지 모달 ── -->
+  <div id="encourage-modal" class="modal hidden">
+    <div class="modal-backdrop" onclick="closeEncourageModal()"></div>
+    <div class="modal-content encourage-modal-content">
+      <div class="encourage-emoji" id="encourage-emoji"></div>
+      <h3 id="encourage-title"></h3>
+      <p id="encourage-msg"></p>
+      <div class="encourage-date" id="encourage-date"></div>
+      <div class="encourage-btn-row">
+        <button class="encourage-close-btn" onclick="closeEncourageModal()">괜찮아요 💚</button>
+        <button class="water-modal-btn" id="water-modal-btn" onclick="waterPlantOnDate()">💧 물주기</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 인증샷 확인 모달 ── -->
+  <div id="proof-modal" class="modal hidden">
+    <div class="modal-backdrop" onclick="closeProofModal()"></div>
+    <div class="modal-content proof-modal-content">
+      <div class="proof-modal-date-row" id="proof-modal-date"></div>
+      <div class="proof-modal-mission" id="proof-modal-mission"></div>
+      <div class="proof-modal-photo-wrap hidden" id="proof-modal-photo-wrap">
+        <img id="proof-modal-photo" src="" alt="인증샷">
+      </div>
+      <div class="proof-modal-no-photo hidden" id="proof-modal-no-photo">
+        <span>📷</span>
+        <p>인증샷이 없어요</p>
+      </div>
+      <button class="modal-confirm-btn" onclick="closeProofModal()">닫기</button>
+    </div>
+  </div>
+
+  <!-- ── 개인정보 처리방침 모달 ── -->
+  <div id="privacy-modal" class="modal hidden">
+    <div class="modal-backdrop" onclick="closePrivacyModal()"></div>
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>개인정보 처리방침</h2>
+        <p class="modal-sub">나만의 작은 정원 개인정보 처리방침</p>
+      </div>
+      <div class="privacy-body">
+        <div class="privacy-section">
+          <h4>1. 수집하는 개인정보 항목</h4>
+          <p>아이디, 비밀번호, 이름, 생년월일, 이메일 주소</p>
+        </div>
+        <div class="privacy-section">
+          <h4>2. 개인정보 수집 및 이용 목적</h4>
+          <p>회원 식별 및 서비스 제공, 계정별 데이터 저장 및 관리</p>
+        </div>
+        <div class="privacy-section">
+          <h4>3. 개인정보 보유 및 이용 기간</h4>
+          <p>회원 탈퇴 시 또는 이용 목적 달성 후 즉시 파기합니다.</p>
+        </div>
+        <div class="privacy-section">
+          <h4>4. 개인정보 제3자 제공</h4>
+          <p>이용자의 개인정보를 제3자에게 제공하지 않습니다.</p>
+        </div>
+        <div class="privacy-section">
+          <h4>5. 개인정보 처리 위탁</h4>
+          <p>본 서비스는 개인정보 처리 업무를 외부에 위탁하지 않습니다.</p>
+        </div>
+        <div class="privacy-section">
+          <h4>6. 정보주체의 권리</h4>
+          <p>이용자는 언제든지 자신의 개인정보에 대한 열람, 정정, 삭제 및 처리 정지를 요청할 수 있습니다.</p>
+        </div>
+        <div class="privacy-section">
+          <h4>7. 저장 방식 안내</h4>
+          <p>본 서비스는 학습·테스트 목적의 서비스로, 모든 개인정보는 사용자 기기의 로컬 저장소(localStorage)에만 저장되며 외부 서버로 전송되지 않습니다.</p>
+        </div>
+      </div>
+      <button class="modal-confirm-btn" onclick="closePrivacyModal()">확인했습니다</button>
+    </div>
+  </div>
+
+  <!-- ── 인증 뷰 (로그인 / 회원가입) ── -->
+  <div id="auth-view" class="hidden">
+    <div class="auth-container">
+      <div class="auth-logo-area">
+        <span class="auth-logo">🌿</span>
+        <h1 class="auth-title">나만의 작은 정원</h1>
+        <p class="auth-subtitle">매일 미션을 완료하며 나만의 식물을 키워요</p>
+      </div>
+
+      <div class="auth-card">
+        <div class="auth-tabs">
+          <button class="auth-tab active" id="tab-login" onclick="showAuthPanel('login')">로그인</button>
+          <button class="auth-tab" id="tab-signup" onclick="showAuthPanel('signup')">회원가입</button>
+        </div>
+
+        <!-- 로그인 패널 -->
+        <div id="login-panel" class="auth-panel">
+          <div class="form-group">
+            <label class="form-label" for="login-username">아이디</label>
+            <input type="text" id="login-username" class="form-input" placeholder="아이디를 입력하세요"
+              autocomplete="username" onkeydown="if(event.key==='Enter') document.getElementById('login-password').focus()">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="login-password">비밀번호</label>
+            <input type="password" id="login-password" class="form-input" placeholder="비밀번호를 입력하세요"
+              autocomplete="current-password" onkeydown="if(event.key==='Enter') handleLoginSubmit()">
+          </div>
+          <div class="form-error hidden" id="login-error"></div>
+          <button class="auth-submit-btn" id="login-btn" onclick="handleLoginSubmit()">로그인</button>
+        </div>
+
+        <!-- 회원가입 패널 -->
+        <div id="signup-panel" class="auth-panel hidden">
+          <div class="form-group">
+            <label class="form-label" for="signup-username">아이디 <span class="required">*</span></label>
+            <input type="text" id="signup-username" class="form-input" placeholder="4~20자, 영문/숫자/밑줄" autocomplete="username">
+            <div class="form-hint">4~20자, 영문·숫자·밑줄(_)만 사용 가능</div>
+            <div class="field-error hidden" id="err-username"></div>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="signup-password">비밀번호 <span class="required">*</span></label>
+            <input type="password" id="signup-password" class="form-input" placeholder="8자 이상 입력" autocomplete="new-password">
+            <div class="form-hint">8자 이상</div>
+            <div class="field-error hidden" id="err-password"></div>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="signup-password-confirm">비밀번호 확인 <span class="required">*</span></label>
+            <input type="password" id="signup-password-confirm" class="form-input" placeholder="비밀번호를 다시 입력하세요" autocomplete="new-password">
+            <div class="field-error hidden" id="err-password-confirm"></div>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="signup-name">이름 <span class="required">*</span></label>
+            <input type="text" id="signup-name" class="form-input" placeholder="이름을 입력하세요">
+            <div class="field-error hidden" id="err-name"></div>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="signup-birthdate">생년월일 <span class="required">*</span></label>
+            <input type="date" id="signup-birthdate" class="form-input">
+            <div class="field-error hidden" id="err-birthdate"></div>
+          </div>
+          <div class="form-group">
+            <label class="privacy-check-label">
+              <input type="checkbox" id="signup-privacy">
+              <span>개인정보 처리방침에 동의합니다.
+                <button type="button" class="privacy-link-btn" onclick="showPrivacyModal()">내용 보기</button>
+              </span>
+            </label>
+            <div class="field-error hidden" id="err-privacy"></div>
+          </div>
+          <div class="form-error hidden" id="signup-error"></div>
+          <button class="auth-submit-btn" id="signup-btn" onclick="handleSignupSubmit()">회원가입</button>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- ── 식물 선택 모달 ── -->
   <div id="plant-modal" class="modal hidden">
@@ -42,6 +193,7 @@
         <span class="app-logo">🌿</span>
         <span class="app-title">나만의 작은 정원</span>
       </div>
+      <div class="header-user-area" id="header-user-area"></div>
     </header>
 
     <main class="home-main">
@@ -142,11 +294,31 @@
           </div>
           <div class="mission-text" id="mission-text"></div>
           <div class="mission-desc" id="mission-desc"></div>
+
+          <!-- 인증샷 업로드 -->
+          <div class="proof-upload-area" id="proof-upload-area">
+            <label class="proof-upload-label" for="proof-photo-input">
+              <span class="proof-camera-icon">📷</span>
+              <span>인증샷 추가 <span class="optional-label">(선택)</span></span>
+              <input type="file" id="proof-photo-input" accept="image/*" onchange="previewProofPhoto(this)">
+            </label>
+          </div>
+          <div class="proof-preview-wrap hidden" id="proof-preview-wrap">
+            <img id="proof-preview-img" src="" alt="인증샷 미리보기">
+            <button type="button" class="proof-remove-btn" onclick="removeProofPhoto()">✕ 제거</button>
+          </div>
+
           <button class="complete-btn" id="complete-btn" onclick="completeMission()">
             ✅ 미션 완료!
           </button>
+          <button class="water-btn hidden" id="water-btn" onclick="waterPlant()">
+            💧 오늘은 물만 줄게요
+          </button>
           <div class="already-done hidden" id="already-done">
             <span>🌟 오늘 미션을 완료했어요!</span>
+            <div class="today-proof-wrap hidden" id="today-proof-wrap">
+              <img id="today-proof-img" src="" alt="오늘 인증샷">
+            </div>
             <span class="next-mission-text">내일 또 만나요</span>
           </div>
         </div>
@@ -154,7 +326,11 @@
 
       <!-- 달력 -->
       <section class="calendar-section">
-        <h3>이번 달 기록</h3>
+        <div class="cal-nav">
+          <button class="cal-nav-btn" id="cal-prev-btn" onclick="moveCalMonth(-1)">&#8249;</button>
+          <h3 id="cal-title">이번 달 기록</h3>
+          <button class="cal-nav-btn" id="cal-next-btn" onclick="moveCalMonth(1)">&#8250;</button>
+        </div>
         <div class="calendar" id="calendar"></div>
       </section>
 
