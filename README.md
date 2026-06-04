@@ -28,7 +28,7 @@
 
 ### 3. app.js에 키 입력
 
-`app.js` 파일 상단의 두 줄을 실제 값으로 교체합니다:
+`app.js` 파일 상단의 두 줄을 실제 값으로 교체합니다:image.png
 
 ```js
 const SUPABASE_URL      = 'YOUR_SUPABASE_URL';      // ← 실제 URL로 교체
