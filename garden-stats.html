@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>나만의 작은 정원 — 이용 현황</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: #0d0d0d;
+    color: #e8e8e8;
+    padding: 32px 24px;
+    min-height: 100vh;
+  }
+
+  h1 { font-size: 22px; font-weight: 700; color: #fff; }
+
+  .subtitle { font-size: 13px; color: #888; margin-top: 4px; }
+
+  .header { margin-bottom: 28px; }
+
+  .grid-4 {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  .grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+
+  .card {
+    background: #1a1a1a;
+    border: 1px solid #2a2a2a;
+    border-radius: 10px;
+    padding: 16px;
+  }
+
+  .card-header {
+    font-size: 13px;
+    font-weight: 600;
+    color: #ccc;
+    margin-bottom: 14px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #2a2a2a;
+  }
+
+  .stat-label { font-size: 12px; color: #888; margin-bottom: 4px; }
+  .stat-value { font-size: 28px; font-weight: 700; color: #fff; line-height: 1.1; }
+  .stat-unit  { font-size: 13px; color: #888; margin-left: 3px; }
+
+  .chart-wrap { position: relative; height: 200px; }
+
+  .proof-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px; }
+  .divider { border: none; border-top: 1px solid #2a2a2a; margin: 12px 0; }
+
+  .bar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+  .bar-label { font-size: 12px; color: #ccc; width: 72px; flex-shrink: 0; }
+  .bar-track { flex: 1; height: 8px; background: #2a2a2a; border-radius: 4px; overflow: hidden; }
+  .bar-fill  { height: 100%; border-radius: 4px; }
+  .bar-fill-accent { background: #5b8ef0; }
+  .bar-fill-muted  { background: #444; }
+  .bar-pct   { font-size: 11px; color: #888; width: 34px; text-align: right; flex-shrink: 0; }
+
+  .proof-note { font-size: 11px; color: #666; margin-top: 8px; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  thead th {
+    text-align: left; color: #666; font-weight: 500;
+    padding: 8px 12px; border-bottom: 1px solid #2a2a2a;
+    font-size: 12px;
+  }
+  thead th.right { text-align: right; }
+  tbody tr:hover { background: #222; }
+  tbody td { padding: 9px 12px; border-bottom: 1px solid #1e1e1e; color: #ddd; }
+  tbody td.right { text-align: right; }
+  tbody td.muted  { color: #666; font-size: 12px; }
+
+  .pill {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 500;
+  }
+  .pill-green  { background: #1a3a1a; color: #5dbb63; }
+  .pill-yellow { background: #3a2e0a; color: #d4a017; }
+  .pill-blue   { background: #0f2040; color: #5b8ef0; }
+  .pill-gray   { background: #252525; color: #888; }
+
+  .footer-note {
+    font-size: 11px; color: #555;
+    text-align: right; margin-top: 20px;
+  }
+
+  @media print {
+    body { background: #fff; color: #111; padding: 16px; }
+    .card { background: #f9f9f9; border-color: #ddd; }
+    .card-header { color: #333; border-color: #ddd; }
+    .stat-value, h1 { color: #111; }
+    .stat-label, .subtitle, .bar-label, .bar-pct, .proof-note { color: #555; }
+    thead th { color: #555; border-color: #ddd; }
+    tbody td { border-color: #eee; color: #222; }
+    tbody tr:hover { background: transparent; }
+    .divider { border-color: #ddd; }
+    .bar-track { background: #e0e0e0; }
+    .bar-fill-accent { background: #4a7de8; }
+    .bar-fill-muted  { background: #aaa; }
+    .pill-green  { background: #d4f7d4; color: #2a7a2a; }
+    .pill-yellow { background: #fef3cd; color: #8a6200; }
+    .pill-blue   { background: #d8e8ff; color: #2050c0; }
+    .pill-gray   { background: #eee; color: #555; }
+    .footer-note { color: #888; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>나만의 작은 정원 — 이용 현황</h1>
+  <p class="subtitle">데이터 기준: 2026-06-04 · 가입자 43명</p>
+</div>
+
+<!-- 핵심 수치 -->
+<div class="grid-4">
+  <div class="card">
+    <div class="stat-label">전체 가입자</div>
+    <div class="stat-value">43</div>
+  </div>
+  <div class="card">
+    <div class="stat-label">식물 등록 사용자</div>
+    <div class="stat-value">36</div>
+  </div>
+  <div class="card">
+    <div class="stat-label">누적 미션 완료</div>
+    <div class="stat-value">154</div>
+  </div>
+  <div class="card">
+    <div class="stat-label">인당 평균 완료</div>
+    <div class="stat-value">4.3<span class="stat-unit">일</span></div>
+  </div>
+</div>
+
+<!-- 차트 2개 -->
+<div class="grid-2">
+  <div class="card">
+    <div class="card-header">날짜별 가입자 수</div>
+    <div class="chart-wrap"><canvas id="signupChart"></canvas></div>
+  </div>
+  <div class="card">
+    <div class="card-header">선택 식물 분포</div>
+    <div class="chart-wrap"><canvas id="plantChart"></canvas></div>
+  </div>
+</div>
+
+<!-- 차트 + 인증샷 -->
+<div class="grid-2">
+  <div class="card">
+    <div class="card-header">미션 완료 구간별 사용자 수</div>
+    <div class="chart-wrap"><canvas id="tierChart"></canvas></div>
+  </div>
+  <div class="card">
+    <div class="card-header">인증샷 업로드 현황</div>
+    <div class="proof-grid">
+      <div>
+        <div class="stat-label">전체 인증 기록</div>
+        <div class="stat-value" style="font-size:22px">48</div>
+      </div>
+      <div>
+        <div class="stat-label">사진 첨부</div>
+        <div class="stat-value" style="font-size:22px">12<span class="stat-unit">/ 48</span></div>
+      </div>
+    </div>
+    <hr class="divider">
+    <div class="bar-row">
+      <span class="bar-label">사진 있음</span>
+      <div class="bar-track"><div class="bar-fill bar-fill-accent" style="width:25%"></div></div>
+      <span class="bar-pct">25%</span>
+    </div>
+    <div class="bar-row">
+      <span class="bar-label">텍스트만</span>
+      <div class="bar-track"><div class="bar-fill bar-fill-muted" style="width:75%"></div></div>
+      <span class="bar-pct">75%</span>
+    </div>
+    <p class="proof-note">전체 인증 중 25%가 사진을 첨부했습니다.</p>
+  </div>
+</div>
+
+<!-- 순위 테이블 -->
+<div class="card">
+  <div class="card-header">사용자별 미션 완료 순위</div>
+  <table>
+    <thead>
+      <tr>
+        <th class="right" style="width:40px">#</th>
+        <th>이름</th>
+        <th>아이디</th>
+        <th>식물</th>
+        <th class="right">완료 일수</th>
+        <th>등급</th>
+      </tr>
+    </thead>
+    <tbody id="rankTable"></tbody>
+  </table>
+</div>
+
+<p class="footer-note">Source: Supabase · Profiles, Garden States, Daily Proofs · 2026-06-04 기준</p>
+
+<script>
+const CHART_DEFAULTS = {
+  color: '#aaa',
+  font: { family: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif', size: 11 },
+};
+Chart.defaults.color = CHART_DEFAULTS.color;
+Chart.defaults.font  = CHART_DEFAULTS.font;
+
+const GRID_COLOR = '#2a2a2a';
+const ACCENT     = '#5b8ef0';
+const PALETTE    = ['#5b8ef0','#4ec9a4','#e07b5a','#c97be0','#e0c55a'];
+
+// ── 가입일 차트 ──
+new Chart(document.getElementById('signupChart'), {
+  type: 'bar',
+  data: {
+    labels: ['5/11','5/12','5/13','5/14','5/15','5/16','5/17','5/18','5/19','5/20',
+             '5/21','5/22','5/23','5/24','5/25','5/26','5/27','5/28','5/29','5/30',
+             '5/31','6/1','6/2','6/3'],
+    datasets: [{
+      label: '가입자',
+      data: [2, 2, 2, 2, 1, 2, 2, 2, 2, 1, 2, 2, 2, 2, 1, 2, 2, 2, 2, 1, 2, 2, 2, 1],
+      backgroundColor: ACCENT,
+      borderRadius: 4,
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { grid: { color: GRID_COLOR }, ticks: { color: '#888', maxRotation: 45 } },
+      y: { grid: { color: GRID_COLOR }, ticks: { color: '#888', stepSize: 1 }, beginAtZero: true },
+    }
+  }
+});
+
+// ── 식물 선택 차트 ──
+new Chart(document.getElementById('plantChart'), {
+  type: 'bar',
+  data: {
+    labels: ['사과나무', '해바라기', '장미', '벚꽃나무', '라벤더'],
+    datasets: [{
+      label: '선택 수',
+      data: [10, 8, 8, 5, 4],
+      backgroundColor: PALETTE,
+      borderRadius: 4,
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { grid: { color: GRID_COLOR }, ticks: { color: '#888' } },
+      y: { grid: { color: GRID_COLOR }, ticks: { color: '#888', stepSize: 1 }, beginAtZero: true },
+    }
+  }
+});
+
+// ── 미션 완료 구간 도넛 ──
+new Chart(document.getElementById('tierChart'), {
+  type: 'doughnut',
+  data: {
+    labels: ['0일 (10명)', '1~3일 (20명)', '4~10일 (1명)', '11일~ (5명)'],
+    datasets: [{
+      data: [10, 20, 1, 5],
+      backgroundColor: ['#444', '#5b8ef0', '#4ec9a4', '#e07b5a'],
+      borderWidth: 2,
+      borderColor: '#1a1a1a',
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    cutout: '60%',
+    plugins: {
+      legend: {
+        position: 'right',
+        labels: { color: '#aaa', font: { size: 11 }, padding: 10, boxWidth: 12 }
+      }
+    }
+  }
+});
+
+// ── 순위 테이블 ──
+const rows = [
+  { name:'민정',     username:'uujuuj06',         plant:'장미',    count:48 },
+  { name:'김희수',   username:'heesu1231',         plant:'(없음)',  count:19 },
+  { name:'김민재',   username:'rlalswo3210',        plant:'사과나무', count:18 },
+  { name:'박란형',   username:'prh429429',          plant:'해바라기', count:16 },
+  { name:'강동규',   username:'donggyu9303',        plant:'해바라기', count:14 },
+  { name:'김민서',   username:'minseo_k',           plant:'해바라기', count:6  },
+  { name:'이재현',   username:'wqop123',            plant:'사과나무', count:3  },
+  { name:'이윤서',   username:'yooong510',          plant:'벚꽃나무', count:3  },
+  { name:'강태민',   username:'taemin21',           plant:'장미',    count:3  },
+  { name:'김진형',   username:'hyounk1004',         plant:'사과나무', count:3  },
+  { name:'박건우',   username:'paskell107',         plant:'해바라기', count:2  },
+  { name:'황중훈',   username:'thisisjhhwaaang',    plant:'벚꽃나무', count:2  },
+  { name:'정서연',   username:'jsy113',             plant:'벚꽃나무', count:2  },
+  { name:'손서림',   username:'ssr8701',            plant:'라벤더',  count:2  },
+  { name:'박상아',   username:'sangah6',            plant:'장미',    count:2  },
+  { name:'박수민',   username:'ass951',             plant:'라벤더',  count:1  },
+  { name:'정윤영',   username:'yoonuu',             plant:'사과나무', count:1  },
+  { name:'추세은',   username:'cntpdms',            plant:'해바라기', count:1  },
+  { name:'백지유',   username:'jiyoo6930',          plant:'해바라기', count:1  },
+  { name:'박진성',   username:'2026',               plant:'장미',    count:1  },
+  { name:'도로롱',   username:'akms1256',           plant:'장미',    count:1  },
+  { name:'이윤서',   username:'yoong510',           plant:'사과나무', count:1  },
+  { name:'정지호',   username:'jungjiho',           plant:'사과나무', count:1  },
+  { name:'이승준',   username:'lkjkk5',             plant:'장미',    count:1  },
+  { name:'김민성',   username:'alstjd0707',         plant:'사과나무', count:1  },
+  { name:'김민재',   username:'kmj2003kmj',         plant:'해바라기', count:1  },
+  { name:'이재우',   username:'wodn1981',           plant:'사과나무', count:0  },
+  { name:'신채원',   username:'chaewon_2',          plant:'사과나무', count:0  },
+  { name:'정도연',   username:'doyeon_99',          plant:'장미',    count:0  },
+  { name:'김진형',   username:'cin04098',           plant:'사과나무', count:0  },
+  { name:'김나연',   username:'nayeon_k',           plant:'벚꽃나무', count:0  },
+  { name:'임우진',   username:'woojin_05',          plant:'해바라기', count:0  },
+  { name:'두주현',   username:'djdoojoo',           plant:'라벤더',  count:0  },
+  { name:'이예린',   username:'yerin_lee',          plant:'라벤더',  count:0  },
+  { name:'히히',     username:'1111',               plant:'벚꽃나무', count:0  },
+  { name:'최서준',   username:'seojun07',           plant:'장미',    count:0  },
+];
+
+function pillHtml(count) {
+  if (count >= 20) return '<span class="pill pill-green">열정</span>';
+  if (count >= 5)  return '<span class="pill pill-yellow">성장 중</span>';
+  if (count === 0) return '<span class="pill pill-gray">시작 전</span>';
+  return '<span class="pill pill-blue">도전 중</span>';
+}
+
+const tbody = document.getElementById('rankTable');
+rows.forEach((r, i) => {
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td class="right muted">${i + 1}</td>
+    <td>${r.name}</td>
+    <td class="muted">${r.username}</td>
+    <td class="muted">${r.plant}</td>
+    <td class="right" style="font-weight:600">${r.count}</td>
+    <td>${pillHtml(r.count)}</td>
+  `;
+  tbody.appendChild(tr);
+});
+</script>
+</body>
+</html>
